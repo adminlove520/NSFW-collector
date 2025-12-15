@@ -1,0 +1,62 @@
+name: Crawler
+
+on:
+  # 手动触发，支持选择采集模式和每日模式
+  workflow_dispatch:
+    inputs:
+      crawl_mode:
+        description: '采集模式（picture/novel）'
+        required: true
+        default: 'picture'
+        type: choice
+        options:
+          - picture
+          - novel
+      daily_mode:
+        description: '每日模式-采集当日数据'
+        required: false
+        default: true
+        type: boolean
+  # 定时执行（可选）
+  schedule:
+    - cron: '0 0 * * *'  # 每天凌晨执行
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # 设置Python环境
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      # 安装依赖
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pyyaml
+      
+      # 运行爬虫
+      - name: Run crawler
+        run: |
+          if [ ${{ inputs.daily_mode }} == true ]; then
+            python main.py --mode ${{ inputs.crawl_mode }} --daily
+          else
+            python main.py --mode ${{ inputs.crawl_mode }}
+          fi
+      
+      # 上传采集结果（可选）
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawl-results-${{ inputs.crawl_mode }}${{ inputs.daily_mode && '-daily' || '' }}
+          path: |
+            ./picture
+            ./novel
+          retention-days: 7  # 保存7天

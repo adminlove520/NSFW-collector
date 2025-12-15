@@ -1,0 +1,39 @@
+crawl:
+  max_pages: 10
+  retry_times: 3
+crawl_mode: picture
+novel_forums:
+- id: 24
+  name: 人妻熟女
+- id: 28
+  name: 經典激情
+- id: 26
+  name: 家庭亂倫
+- id: 35
+  name: 武俠玄幻
+- id: 27
+  name: 學生校園
+picture_forums:
+- id: 33
+  name: gif動圖
+- id: 29
+  name: 亞洲激情
+- id: 30
+  name: 露出清纯
+- id: 31
+  name: 歐美性愛
+- id: 32
+  name: 卡通動漫
+request:
+  delay: 1
+  headers:
+    User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+      like Gecko) Chrome/91.0.4472.124 Safari/537.36
+  proxies:
+    http: null
+    https: null
+  timeout: 10
+save_paths:
+  novel: ./novel
+  picture: ./picture
+site_domain: wm.wmhuu.com
