@@ -44,10 +44,15 @@ jobs:
       # 运行爬虫
       - name: Run crawler
         run: |
-          if [ ${{ inputs.daily_mode }} == true ]; then
-            python main.py --mode ${{ inputs.crawl_mode }} --daily
+          # 设置默认值（针对定时任务）
+          CRAWL_MODE=${{ inputs.crawl_mode || 'picture' }}
+          DAILY_MODE=${{ inputs.daily_mode || 'true' }}
+          
+          # 运行爬虫
+          if [ "$DAILY_MODE" == "true" ]; then
+            python main.py --mode "$CRAWL_MODE" --daily
           else
-            python main.py --mode ${{ inputs.crawl_mode }}
+            python main.py --mode "$CRAWL_MODE"
           fi
       
       # 上传采集结果（可选）
@@ -55,7 +60,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: crawl-results-${{ inputs.crawl_mode }}${{ inputs.daily_mode && '-daily' || '' }}
+          name: crawl-results-${{ inputs.crawl_mode || 'picture' }}${{ (inputs.daily_mode || true) && '-daily' || '' }}
           path: |
             ./picture
             ./novel
