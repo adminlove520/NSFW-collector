@@ -5,13 +5,14 @@ on:
   workflow_dispatch:
     inputs:
       crawl_mode:
-        description: '采集模式（picture/novel）'
+        description: '采集模式（picture/novel/all）'
         required: true
-        default: 'picture'
+        default: 'all'
         type: choice
         options:
           - picture
           - novel
+          - all
       daily_mode:
         description: '每日模式-采集当日数据'
         required: false
@@ -20,6 +21,10 @@ on:
   # 定时执行（可选）
   schedule:
     - cron: '0 0 * * *'  # 每天凌晨执行
+
+permissions:
+  contents: write
+  actions: read
 
 jobs:
   crawl:
@@ -65,3 +70,59 @@ jobs:
             ./picture
             ./novel
           retention-days: 7  # 保存7天
+      
+      # 压缩采集结果
+      - name: Compress results
+        if: always()
+        run: |
+          tar -czf crawl-results-${{ github.run_id }}.tar.gz ./picture ./novel
+      
+      # 创建并上传GitHub Release
+      - name: Create GitHub Release and Upload Asset
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: crawl-${{ github.run_id }}-${{ github.sha }}
+          name: Crawl Results ${{ github.run_id }}
+          body: |
+            爬虫运行结果
+            - 运行ID: ${{ github.run_id }}
+            - 分支: ${{ github.ref }}
+            - 提交: ${{ github.sha }}
+            - 采集模式: ${{ inputs.crawl_mode || 'picture' }}
+            - 每日模式: ${{ inputs.daily_mode || true }}
+          files: ./crawl-results-${{ github.run_id }}.tar.gz
+          draft: false
+          prerelease: false
+      
+      # 推送结果到远程仓库
+      - name: Push results to remote repository
+        if: always()
+        env:
+          REMOTE_REPO: ${{ secrets.REMOTE_REPO_URL }}
+          REMOTE_BRANCH: main
+          GIT_USERNAME: ${{ github.actor }}
+          GIT_EMAIL: ${{ github.actor }}@users.noreply.github.com
+        run: |
+          # 设置Git配置
+          git config --global user.name "$GIT_USERNAME"
+          git config --global user.email "$GIT_EMAIL"
+          
+          # 添加远程仓库
+          if git remote | grep -q origin; then
+            git remote set-url origin "$REMOTE_REPO"
+          else
+            git remote add origin "$REMOTE_REPO"
+          fi
+          
+          # 切换到main分支
+          git checkout -b main || git checkout main
+          
+          # 添加采集结果
+          git add ./picture ./novel
+          
+          # 提交更改
+          git commit -m "Crawl results from run ${{ github.run_id }}: mode=${{ inputs.crawl_mode || 'picture' }}, daily=${{ inputs.daily_mode || true }}" || echo "No changes to commit"
+          
+          # 推送到远程仓库
+          git push -u origin main --force

@@ -1,7 +1,13 @@
 crawl:
   max_pages: 10
   retry_times: 3
-crawl_mode: picture
+crawl_mode: all
+remote_repo:
+  enable: false
+  url: ''
+  branch: main
+  username: ''
+  email: ''
 novel_forums:
 - id: 24
   name: 人妻熟女
